@@ -89,7 +89,8 @@ export default function Storefront() {
           if (cached.age < 150) return;
         }
 
-        const res = await fetch('/api/storefront-data', { cache: 'no-store' });
+        const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://black-white-backend.onrender.com';
+        const res = await fetch(`${API_BASE}/api/storefront-data`, { cache: 'no-store' });
         if (!res.ok) throw new Error('Failed to fetch data');
         const data = await res.json();
 
@@ -187,9 +188,10 @@ export default function Storefront() {
 
   const handleApplyCoupon = async () => {
     setCouponError('');
+    const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://black-white-backend.onrender.com';
     if (!couponCode) return;
     try {
-      const res = await fetch('/api/coupons/validate', {
+      const res = await fetch(`${API_BASE}/api/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: couponCode })
@@ -233,7 +235,7 @@ export default function Storefront() {
     }
 
     try {
-      await fetch(`/api/products/${selectedProduct.id}/decrease-stock`, {
+      await fetch(`${API_BASE}/api/products/${selectedProduct.id}/decrease-stock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: orderQuantity })
