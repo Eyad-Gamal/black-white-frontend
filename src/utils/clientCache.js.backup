@@ -1,0 +1,106 @@
+/**
+ * Client-side caching utility using localStorage
+ * Provides TTL (time-to-live) based caching with automatic expiration
+ * 
+ * Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8
+ */
+
+class ClientCache {
+    /**
+     * Store data in cache with expiration time
+     * @param {string} key - Cache key
+     * @param {any} value - Data to cache (will be JSON stringified)
+     * @param {number} ttl - Time to live in milliseconds (default: 15 minutes)
+     */
+    set(key, value, ttl = 900000) {
+        try {
+            const expiryTimestamp = Date.now() + ttl;
+            const cacheEntry = {
+                value: value,
+                expiry: expiryTimestamp
+            };
+            localStorage.setItem(key, JSON.stringify(cacheEntry));
+        } catch (error) {
+            console.error('ClientCache.set error:', error);
+            // Handle quota exceeded or other localStorage errors silently
+        }
+    }
+
+    /**
+     * Retrieve data from cache if not expired
+     * @param {string} key - Cache key
+     * @returns {any|null} - Cached value or null if expired/not found
+     */
+    get(key) {
+        try {
+            const item = localStorage.getItem(key);
+
+            if (!item) {
+                return null;
+            }
+
+            const cacheEntry = JSON.parse(item);
+
+            // Check if expired
+            if (this.isExpired(key)) {
+                this.remove(key);
+                return null;
+            }
+
+            return cacheEntry.value;
+        } catch (error) {
+            console.error('ClientCache.get error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Remove a specific cache entry
+     * @param {string} key - Cache key to remove
+     */
+    remove(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.error('ClientCache.remove error:', error);
+        }
+    }
+
+    /**
+     * Clear all cache entries
+     * Note: This clears ALL localStorage, including non-cache items
+     * For production use, consider using a namespace prefix for cache keys
+     */
+    clear() {
+        try {
+            localStorage.clear();
+        } catch (error) {
+            console.error('ClientCache.clear error:', error);
+        }
+    }
+
+    /**
+     * Check if a cache entry is expired
+     * @param {string} key - Cache key to check
+     * @returns {boolean} - True if expired or not found, false otherwise
+     */
+    isExpired(key) {
+        try {
+            const item = localStorage.getItem(key);
+
+            if (!item) {
+                return true;
+            }
+
+            const cacheEntry = JSON.parse(item);
+            const now = Date.now();
+
+            return now > cacheEntry.expiry;
+        } catch (error) {
+            console.error('ClientCache.isExpired error:', error);
+            return true;
+        }
+    }
+}
+
+export default ClientCache;
