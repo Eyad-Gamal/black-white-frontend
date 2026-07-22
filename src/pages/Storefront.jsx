@@ -85,8 +85,9 @@ export default function Storefront() {
           if (data.overlay && data.overlay._id) setOverlay(data.overlay);
 
           setIsLoading(false);
-          // If cached data is fresh (less than 150 seconds old), don't fetch again
-          if (cached.age < 150) return;
+          // If cached data is fresh (less than 10 seconds old), don't fetch again.
+          // This allows admin changes to reflect almost immediately upon page refresh.
+          if (cached.age < 10) return;
         }
 
         const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://black-white-backend.onrender.com';

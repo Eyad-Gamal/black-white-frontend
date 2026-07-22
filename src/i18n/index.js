@@ -20,9 +20,10 @@ i18n
                 translation: arTranslations
             }
         },
-        fallbackLng: 'ar', // Default fallback language
+        fallbackLng: 'en', // Default fallback language
+        lng: localStorage.getItem('i18nextLng') || 'en',
         detection: {
-            order: ['localStorage', 'navigator'],
+            order: ['localStorage'],
             caches: ['localStorage']
         },
         interpolation: {

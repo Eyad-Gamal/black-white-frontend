@@ -52,6 +52,8 @@ export const clientCache = {
                     localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(cacheEntry));
                 } catch (retryError) {
                     console.error('Failed to cache data after cleanup, using memory cache');
+                    // Remove stale data since we can't update it
+                    try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
                     memoryCache.set(CACHE_PREFIX + key, cacheEntry);
                 }
             } else {
