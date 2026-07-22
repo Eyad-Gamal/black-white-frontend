@@ -243,7 +243,39 @@ export default function Storefront() {
     }
 
     const pName = selectedProduct.title?.[i18n.language] || selectedProduct.title?.ar || selectedProduct.title || selectedProduct.name;
-    const msg = `${t('alert.whatsappNewOrder')}\n${t('alert.whatsappProduct')} ${pName}\n${t('alert.whatsappSize')} ${selectedSize}\nQuantity: ${orderQuantity}\n${t('alert.whatsappBasePrice')} ${basePrice} ${t('hero.currency')}${couponText}\nName: ${orderName}\nPhone: ${orderPhone}\nAddress: ${orderAddress}`;
+    const pId = selectedProduct.id || selectedProduct._id || '';
+    const pOrder = selectedProduct.order !== undefined ? selectedProduct.order : '';
+    const catObj = categories.find(c => c.id === selectedProduct.categoryId || c._id === selectedProduct.categoryId || c.name?.ar === selectedProduct.category);
+    const pCategory = catObj ? (catObj.name?.[i18n.language] || catObj.name?.ar || catObj.name) : (selectedProduct.category || selectedProduct.categoryId || '');
+
+    const isAr = i18n.language === 'ar';
+    const msg = isAr ?
+`🛒 *طلب جديد:*
+📌 *المنتج:* ${pName}
+🆔 *كود المنتج (ID):* ${pId}
+🔢 *ترتيب المنتج:* ${pOrder}
+🏷️ *القسم (Category):* ${pCategory}
+📐 *المقاس:* ${selectedSize}
+🔢 *الكمية:* ${orderQuantity}
+💰 *السعر:* ${basePrice} ${t('hero.currency')}${couponText}
+
+👤 *الاسم:* ${orderName}
+📱 *الهاتف:* ${orderPhone}
+📍 *العنوان:* ${orderAddress}`
+:
+`🛒 *New Order:*
+📌 *Product:* ${pName}
+🆔 *Product ID:* ${pId}
+🔢 *Product Order:* ${pOrder}
+🏷️ *Category:* ${pCategory}
+📐 *Size:* ${selectedSize}
+🔢 *Quantity:* ${orderQuantity}
+💰 *Price:* ${basePrice} ${t('hero.currency')}${couponText}
+
+👤 *Name:* ${orderName}
+📱 *Phone:* ${orderPhone}
+📍 *Address:* ${orderAddress}`;
+
     const url = `https://wa.me/${settings.whatsappNumber || '201000000000'}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     setShowSuccess(true);
