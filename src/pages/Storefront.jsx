@@ -430,6 +430,28 @@ export default function Storefront() {
         </div>
       </div>
 
+      {/* ===== CUSTOM REQUESTS BUTTONS ===== */}
+      <div className="custom-requests-bar" style={{ padding: '20px', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '15px', background: 'var(--bg-main)' }}>
+        <button className="filter-btn" onClick={() => {
+          const msg = i18n.language === 'ar' ? 'أريد تقديم طلب مخصص لون/تصميم' : 'I want to make a custom color/design request';
+          window.open(`https://wa.me/${settings.whatsappNumber || '201000000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+        }}>
+          {i18n.language === 'ar' ? 'طلب مخصص لون/تصميم' : 'Custom Color/Design'}
+        </button>
+        <button className="filter-btn" onClick={() => {
+          const msg = i18n.language === 'ar' ? 'أريد تقديم طلب مناسبه/فن داي' : 'I want to make an event/fun day request';
+          window.open(`https://wa.me/${settings.whatsappNumber || '201000000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+        }}>
+          {i18n.language === 'ar' ? 'طلب مناسبه/فن داي' : 'Event/Fun Day'}
+        </button>
+        <button className="filter-btn" onClick={() => {
+          const msg = i18n.language === 'ar' ? 'أريد الاستفسار عن اليونيفورم' : 'I want to inquire about uniforms';
+          window.open(`https://wa.me/${settings.whatsappNumber || '201000000000'}?text=${encodeURIComponent(msg)}`, '_blank');
+        }}>
+          {i18n.language === 'ar' ? 'يونيفورم' : 'Uniform'}
+        </button>
+      </div>
+
       {/* ===== PRODUCTS SECTION ===== */}
       <section className="products-section" id="products">
         <div className="section-header animate-in visible">
