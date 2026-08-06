@@ -144,19 +144,27 @@ export default function Storefront() {
 
   // ===== Navbar active section tracking =====
   useEffect(() => {
-    const sections = ['hero', 'products', 'story', 'footer'];
-    const observers = [];
-    sections.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const observer = new IntersectionObserver(
-        ([entry]) => { if (entry.isIntersecting) setActiveNavSection(id); },
-        { threshold: 0.3, rootMargin: '-60px 0px 0px 0px' }
-      );
-      observer.observe(el);
-      observers.push(observer);
-    });
-    return () => observers.forEach(o => o.disconnect());
+    const sectionIds = ['hero', 'products', 'story', 'footer'];
+    const HEADER_HEIGHT = 70; // approximate header height in px
+
+    const updateActiveSection = () => {
+      let currentSection = 'hero';
+      // Find the section whose top is closest to (but still above) the header bottom
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        // Section is "active" once its top has passed the header
+        if (rect.top <= HEADER_HEIGHT + 10) {
+          currentSection = id;
+        }
+      }
+      setActiveNavSection(currentSection);
+    };
+
+    updateActiveSection(); // run once on mount
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    return () => window.removeEventListener('scroll', updateActiveSection);
   }, [isLoading]);
 
   // ===== Android/browser back button: close modal instead of leaving =====
@@ -696,12 +704,21 @@ export default function Storefront() {
                         {selectedSize ? selectedProduct.prices[selectedSize] : Math.min(...Object.values(selectedProduct.prices || {}))} <span className="currency">{t('hero.currency')}</span>
                       </p>
                       {appliedCoupon && (
-                        <p className="modal-price" style={{ color: '#000', marginTop: '4px' }}>
+                        <p className="modal-price" style={{
+                          color: 'transparent',
+                          WebkitTextStroke: '1.5px #ffffff',
+                          textStroke: '1.5px #ffffff',
+                          marginTop: '4px',
+                          fontSize: '2rem',
+                          fontWeight: '800',
+                          letterSpacing: '2px',
+                          filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))'
+                        }}>
                           {(() => {
                             let bp = selectedSize ? selectedProduct.prices[selectedSize] : Math.min(...Object.values(selectedProduct.prices || {}));
                             let fp = appliedCoupon.type === 'percentage' ? bp - (bp * (appliedCoupon.value / 100)) : Math.max(0, bp - appliedCoupon.value);
-                            return fp;
-                          })()} <span className="currency">{t('hero.currency')}</span>
+                            return Math.round(fp);
+                          })()} <span className="currency" style={{ fontSize: '1rem', WebkitTextStroke: '1px #ffffff' }}>{t('hero.currency')}</span>
                         </p>
                       )}
                     </div>
