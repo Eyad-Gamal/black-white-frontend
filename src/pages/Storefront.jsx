@@ -47,6 +47,7 @@ export default function Storefront() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
+  const [activeNavSection, setActiveNavSection] = useState('hero');
 
   useEffect(() => {
     if (selectedProduct) {
@@ -141,6 +142,42 @@ export default function Storefront() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // ===== Navbar active section tracking =====
+  useEffect(() => {
+    const sections = ['hero', 'products', 'story', 'footer'];
+    const observers = [];
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveNavSection(id); },
+        { threshold: 0.3, rootMargin: '-60px 0px 0px 0px' }
+      );
+      observer.observe(el);
+      observers.push(observer);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, [isLoading]);
+
+  // ===== Android/browser back button: close modal instead of leaving =====
+  useEffect(() => {
+    if (selectedProduct) {
+      window.history.pushState({ modal: true }, '');
+    }
+    const handlePopState = (e) => {
+      if (selectedProduct) {
+        setSelectedProduct(null);
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setCouponError('');
+        // Prevent browser from navigating back
+        window.history.pushState({ modal: true }, '');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedProduct]);
+
   const filteredProducts = products.filter(p => {
     const pName = p.title?.[i18n.language] || p.title?.ar || p.title || p.name || '';
     const pCat = p.categoryId || p.category || '';
@@ -190,19 +227,26 @@ export default function Storefront() {
   const handleApplyCoupon = async () => {
     setCouponError('');
     const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://black-white-backend.onrender.com';
-    if (!couponCode) return;
+    if (!couponCode.trim()) return;
     try {
       const res = await fetch(`${API_BASE}/api/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode })
+        body: JSON.stringify({ code: couponCode.trim() })
       });
       const data = await res.json();
-      if (!res.ok) {
-        setCouponError(data.message);
+      // Backend returns: { valid, discount, discountType, code } OR { valid: false, message }
+      if (!data.valid) {
+        setCouponError(data.message || (i18n.language === 'ar' ? 'كود الخصم غير صالح' : 'Invalid coupon code'));
         setAppliedCoupon(null);
       } else {
-        setAppliedCoupon(data);
+        // Normalize to { type, value, code } for consistent usage
+        setAppliedCoupon({
+          type: data.discountType,
+          value: data.discount,
+          code: data.code
+        });
+        setCouponError('');
       }
     } catch (e) {
       setCouponError(i18n.language === 'ar' ? 'حدث خطأ أثناء تفعيل الكود' : 'Error applying coupon');
@@ -235,15 +279,34 @@ export default function Storefront() {
       couponText = `\n${t('alert.whatsappCoupon')} ${appliedCoupon.code}\n${t('alert.whatsappDiscountPrice')} ${finalPrice} ${t('hero.currency')}`;
     }
 
+    const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://black-white-backend.onrender.com';
+    const productId = selectedProduct._id || selectedProduct.id;
+    let newStock = (selectedProduct.stock || 0) - orderQuantity;
+    if (newStock < 0) newStock = 0;
     try {
-      await fetch(`${API_BASE}/api/products/${selectedProduct.id}/decrease-stock`, {
+      const stockRes = await fetch(`${API_BASE}/api/products/${productId}/decrease-stock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantity: orderQuantity })
       });
+      if (stockRes.ok) {
+        const stockData = await stockRes.json();
+        // Use the confirmed stock from backend if available
+        if (typeof stockData.stock === 'number') newStock = stockData.stock;
+      }
     } catch (err) {
       console.error(err);
     }
+
+    // ✅ Update products list in state immediately (no page refresh needed)
+    // The useEffect watching [products] will automatically sync selectedProduct.stock too
+    setProducts(prev => prev.map(p =>
+      (p._id === productId || p.id === productId)
+        ? { ...p, stock: newStock }
+        : p
+    ));
+    // ✅ Clear storefront cache so next page load fetches fresh stock
+    clientCache.invalidate('storefront');
 
     const pName = selectedProduct.title?.[i18n.language] || selectedProduct.title?.ar || selectedProduct.title || selectedProduct.name;
     const pId = selectedProduct.id || selectedProduct._id || '';
@@ -302,10 +365,10 @@ export default function Storefront() {
             <div className="logo-mark"><img src="/main-logo.jpeg" alt="Black & White" fetchPriority="high" /></div>
           </a>
           <nav className="header-nav">
-            <a href="#hero" className="nav-link active">{t('header.home')}</a>
-            <a href="#products" className="nav-link">{t('header.collection')}</a>
-            <a href="#story" className="nav-link">{t('header.story')}</a>
-            <a href="#footer" className="nav-link">{t('header.contact')}</a>
+            <a href="#hero" className={`nav-link ${activeNavSection === 'hero' ? 'active' : ''}`}>{t('header.home')}</a>
+            <a href="#products" className={`nav-link ${activeNavSection === 'products' ? 'active' : ''}`}>{t('header.collection')}</a>
+            <a href="#story" className={`nav-link ${activeNavSection === 'story' ? 'active' : ''}`}>{t('header.story')}</a>
+            <a href="#footer" className={`nav-link ${activeNavSection === 'footer' ? 'active' : ''}`}>{t('header.contact')}</a>
           </nav>
           <div className="header-actions">
             <button className="header-icon-btn lang-btn" onClick={toggleLanguage} aria-label="Toggle Language" style={{ fontSize: '0.9rem', fontWeight: 'bold', border: '1px solid var(--accent)', borderRadius: '4px', padding: '4px 8px', background: 'rgba(200, 169, 110, 0.05)', color: 'var(--accent)', cursor: 'pointer' }}>
